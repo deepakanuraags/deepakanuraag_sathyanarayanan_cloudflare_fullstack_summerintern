@@ -100,6 +100,7 @@ function setCookie(response) {
 // rewrite handler registration
 async function rewriteContent(resp, previsitedDate) {
   return new HTMLRewriter()
+    .on("title", new ElementHandler())
     .on("h1#title", new ElementHandler())
     .on("p#description", new ElementHandler())
     .on("a#url", new ElementHandler())
@@ -192,6 +193,14 @@ class ElementHandler {
         if (this.previsitedDate) {
           element.setAttribute("style", "margin-bottom:25px;");
         }
+        break;
+      case "title":
+        if (toggleString == "server1") {
+          element.setInnerContent("Linkedin");
+        } else {
+          element.setInnerContent("Github");
+        }
+
         break;
       default:
       // code block
