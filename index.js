@@ -74,20 +74,7 @@ async function getWebPage(request) {
 
 function getDate() {
   let current_datetime = new Date();
-  // let formatted_date =
-  //   current_datetime.getFullYear() +
-  //   "-" +
-  //   (current_datetime.getMonth() + 1) +
-  //   "-" +
-  //   current_datetime.getDate() +
-  //   " " +
-  //   current_datetime.getHours() +
-  //   ":" +
-  //   current_datetime.getMinutes() +
-  //   ":" +
-  //   current_datetime.getSeconds();
-  // return formatted_date;
-  return current_datetime.toLocaleString();
+  return current_datetime.toString();
 }
 function setCookie(response) {
   response = new Response(response.body, response);
