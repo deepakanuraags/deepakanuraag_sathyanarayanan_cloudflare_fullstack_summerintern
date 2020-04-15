@@ -1,6 +1,7 @@
-// import * as linkedinLogo from "./assets/linkedin.svg";
-var URLS = undefined;
-var toggleString = "server1";
+URLS = undefined;
+toggleString = "server1";
+cookieIdentifier = "previously_visited_server";
+loadVariantURLS = "https://cfw-takehome.developers.workers.dev/api/variants";
 addEventListener("fetch", event => {
   event.respondWith(handleRequest(event.request));
 });
@@ -12,48 +13,111 @@ async function handleRequest(request) {
   return new Promise((resolve, reject) => {
     if (!URLS) {
       console.log("fetching URLS");
-      fetch("https://cfw-takehome.developers.workers.dev/api/variants")
+      fetch(loadVariantURLS)
         .then(data => data.json())
         .then(data => {
           URLS = data["variants"];
         })
         .then(() => {
-          resolve(getWebPage());
+          resolve(getWebPage(request));
+        })
+        .catch(err => {
+          resolve(
+            new Response("Could not variant URLS from " + loadVariantURLS)
+          );
         });
     } else {
       console.log("not fetching URLS");
-      resolve(getWebPage());
+      resolve(getWebPage(request));
     }
   });
 }
 
-async function getWebPage() {
-  if (Math.random() >= 0.5) toggleString = "server1";
-  else toggleString = "server2";
+async function getWebPage(request) {
+  let cookieString = request.headers.get("Cookie");
+  let predeterminedServer = "";
+  let previsitedDate = "";
+  if (cookieString) {
+    let cookies = cookieString.split(";");
+    cookies.forEach(cookie => {
+      console.log(cookie);
+      let cookieName = cookie.split("=")[0].trim();
+      if (cookieName === cookieIdentifier) {
+        let val = cookie.split("=")[1];
+        predeterminedServer = val.split("?")[0];
+        previsitedDate = val.split("?")[1];
+      }
+    });
+  }
+  console.log("visited server" + predeterminedServer);
+  console.log("visited date" + previsitedDate);
+  if (predeterminedServer) {
+    toggleString = predeterminedServer;
+  } else {
+    toggleString = Math.random() < 0.5 ? "server1" : "server2";
+  }
   if (toggleString == "server1") {
-    let resp = await fetch(URLS[0]);
-    // resp = await rewriteContent(resp);
-    return resp;
+    let resp = await fetch(URLS[0]).catch(err => {
+      new Response("Could not load response of " + URLS[0]);
+    });
+    resp = await rewriteContent(resp, previsitedDate);
+    return setCookie(resp);
   }
   if (toggleString == "server2") {
-    let resp = await fetch(URLS[1]);
-    // resp = await rewriteContent(resp);
-    return resp;
+    let resp = await fetch(URLS[1]).catch(err => {
+      new Response("Could not load response of " + URLS[1]);
+    });
+    resp = await rewriteContent(resp, previsitedDate);
+    return setCookie(resp);
   }
 }
 
-async function rewriteContent(resp) {
+function getDate() {
+  let current_datetime = new Date();
+  // let formatted_date =
+  //   current_datetime.getFullYear() +
+  //   "-" +
+  //   (current_datetime.getMonth() + 1) +
+  //   "-" +
+  //   current_datetime.getDate() +
+  //   " " +
+  //   current_datetime.getHours() +
+  //   ":" +
+  //   current_datetime.getMinutes() +
+  //   ":" +
+  //   current_datetime.getSeconds();
+  // return formatted_date;
+  return current_datetime.toString();
+}
+function setCookie(response) {
+  response = new Response(response.body, response);
+  let cookieCreationDate = new Date();
+  cookieCreationDate.to;
+  response.headers.append(
+    "Set-Cookie",
+    `${cookieIdentifier}=` + toggleString + "?" + getDate()
+  );
+  return response;
+}
+
+async function rewriteContent(resp, previsitedDate) {
   return new HTMLRewriter()
-    .on("h1#title", new ElementHandler("href"))
-    .on("p#description", new ElementHandler("href"))
-    .on("a#url", new ElementHandler("href"))
-    .on("path", new ElementHandler("href"))
-    .on("svg", new ElementHandler("href"))
-    .on("div[class*=bg-green-100]", new ElementHandler("href"))
+    .on("h1#title", new ElementHandler())
+    .on("p#description", new ElementHandler())
+    .on("a#url", new ElementHandler())
+    .on("path", new ElementHandler())
+    .on("svg", new ElementHandler())
+    .on("span", new ElementHandler(previsitedDate))
+    .on("div[class*=mt-6]", new ElementHandler(previsitedDate))
+    .on("div[class*=bg-green-100]", new ElementHandler())
     .transform(resp);
 }
 
 class ElementHandler {
+  previsitedDate;
+  constructor(date) {
+    this.previsitedDate = date;
+  }
   element(element) {
     // HTML rewrite done here
     console.log(`Incoming element: ${element.tagName}`);
@@ -115,7 +179,20 @@ class ElementHandler {
         }
         break;
       case "div":
-        element.setAttribute("style", "background-color:unset");
+        if (element.getAttribute("class").includes("mt-5 sm:mt-6")) {
+          if (this.previsitedDate) {
+            element.append("You previously visited at " + this.previsitedDate);
+            element.setAttribute("class", "text-sm text-gray-500 mt-5 sm:mt-6");
+            element.setAttribute("style", "text-align:center");
+          }
+        } else {
+          element.setAttribute("style", "background-color:unset");
+        }
+        break;
+      case "span":
+        if (this.previsitedDate) {
+          element.setAttribute("style", "margin-bottom:25px;");
+        }
         break;
       default:
       // code block
