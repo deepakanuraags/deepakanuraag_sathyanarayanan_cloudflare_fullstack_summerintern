@@ -1,6 +1,6 @@
-name = "deepakanuraag_sathyanarayanan_cloudflare_fullstack_summerintern2020"
+name = "deepakanuraag_sathyanarayanan_cloudflare_fullstack_summerintern"
 type = "javascript"
-account_id = ""
+account_id = "11b9ec4d5dcea35e18bf0a3ee0bea09c"
 workers_dev = true
 route = ""
 zone_id = ""
