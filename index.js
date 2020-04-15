@@ -9,7 +9,9 @@ addEventListener("fetch", event => {
  * Respond with hello worker text
  * @param {Request} request
  */
+
 async function handleRequest(request) {
+  // load the urls only once during the first hit to the server as per requirement
   return new Promise((resolve, reject) => {
     if (!URLS) {
       console.log("fetching URLS");
@@ -37,6 +39,8 @@ async function getWebPage(request) {
   let cookieString = request.headers.get("Cookie");
   let predeterminedServer = "";
   let previsitedDate = "";
+
+  // cookie reading
   if (cookieString) {
     let cookies = cookieString.split(";");
     cookies.forEach(cookie => {
@@ -49,11 +53,14 @@ async function getWebPage(request) {
       }
     });
   }
+
   console.log("visited server" + predeterminedServer);
   console.log("visited date" + previsitedDate);
+  // check if the user has already visited , if visited dont go for redistribution of request
   if (predeterminedServer) {
     toggleString = predeterminedServer;
   } else {
+    // request distribution A/B Testing
     toggleString = Math.random() < 0.5 ? "server1" : "server2";
   }
   if (toggleString == "server1") {
@@ -72,10 +79,13 @@ async function getWebPage(request) {
   }
 }
 
+// date formatting
 function getDate() {
   let current_datetime = new Date();
   return current_datetime.toString();
 }
+
+// set cookie at the last stage before the response is served;
 function setCookie(response) {
   response = new Response(response.body, response);
   let cookieCreationDate = new Date();
@@ -87,6 +97,7 @@ function setCookie(response) {
   return response;
 }
 
+// rewrite handler registration
 async function rewriteContent(resp, previsitedDate) {
   return new HTMLRewriter()
     .on("h1#title", new ElementHandler())
@@ -100,6 +111,7 @@ async function rewriteContent(resp, previsitedDate) {
     .transform(resp);
 }
 
+// HTML rewrite customisation
 class ElementHandler {
   previsitedDate;
   constructor(date) {
