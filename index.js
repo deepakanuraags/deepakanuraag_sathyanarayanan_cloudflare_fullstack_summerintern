@@ -87,7 +87,7 @@ function getDate() {
   //   ":" +
   //   current_datetime.getSeconds();
   // return formatted_date;
-  return current_datetime.toString();
+  return current_datetime.toLocaleString();
 }
 function setCookie(response) {
   response = new Response(response.body, response);
